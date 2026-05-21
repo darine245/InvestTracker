@@ -65,6 +65,12 @@ else
     </div>
 
     <!-- ===== GRAPHIQUES ===== -->
+    @if (!string.IsNullOrEmpty(chartError))
+    {
+        <div class="alert alert-warning">
+            ⚠️ @chartError
+        </div>
+    }
     @if (lines.Any())
     {
         <div class="row mb-4">
@@ -171,6 +177,8 @@ else
     private decimal gainLossPercent;
     private decimal availableBudget;
     private Dictionary<string, decimal> allocation = new();
+    private string? chartError;
+    private bool chartsRendered;
             // Lecture depuis AuthState — plus de hardcode
     private int currentUserId => AuthState.CurrentUser!.Id;
     
@@ -199,9 +207,35 @@ else
         // OnAfterRenderAsync : le DOM existe ici → on peut appeler Chart.js
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && lines != null && lines.Any())
+        if (lines == null || !lines.Any() || chartsRendered)
+            return;
+
+        chartError = null;
+
+        if (lines.Any())
         {
-            await RenderChartsAsync();
+            try
+            {
+                var chartAvailable = await JS
+                    .InvokeAsync<bool>("isChartJsAvailable");
+                if (!chartAvailable)
+                {
+                    chartError =
+                        "Chart.js est bloqué ou non chargé. Autorisez le CDN ou utilisez une version locale.";
+                    await InvokeAsync(StateHasChanged);
+                    return;
+                }
+
+                await RenderChartsAsync();
+                chartsRendered = true;
+            }
+            catch (Exception ex)
+            {
+                chartError =
+                    "Impossible de charger les graphiques (Chart.js manquant ou bloqué).";
+                Console.WriteLine($"[Portfolio] Charts error: {ex.Message}");
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
 

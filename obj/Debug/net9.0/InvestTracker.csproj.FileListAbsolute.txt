@@ -112,7 +112,6 @@ C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\scopedcss\Components\Layout\Reconne
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\scopedcss\bundle\InvestTracker.styles.css
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\scopedcss\projectbundle\InvestTracker.bundle.scp.css
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\1wbceghzzm-{0}-khy4lop6wu-khy4lop6wu.gz
-C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\svkit0ob6s-{0}-3wkjzgzi1q-3wkjzgzi1q.gz
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\fcat42zdx9-{0}-bqjiyaj88i-bqjiyaj88i.gz
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\uko1ghgwn1-{0}-c2jlpeoesf-c2jlpeoesf.gz
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\kcwl6e3v5m-{0}-erw9l3u2r3-erw9l3u2r3.gz
@@ -171,3 +170,5 @@ C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\refint\InvestTracker.dll
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\InvestTracker.pdb
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\InvestTracker.genruntimeconfig.cache
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\ref\InvestTracker.dll
+C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\svkit0ob6s-{0}-hamzsdosy6-hamzsdosy6.gz
+C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\x71ywdc9kt-{0}-aiip7bg9y3-aiip7bg9y3.gz

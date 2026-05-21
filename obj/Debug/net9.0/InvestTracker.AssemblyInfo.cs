@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("InvestTracker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+187061883823f87994e1aa47c3b906c2d5eb7392")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5434e7008248f0cd545dcddef3f51586e4e4c153")]
 [assembly: System.Reflection.AssemblyProductAttribute("InvestTracker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("InvestTracker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

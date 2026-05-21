@@ -90,6 +90,15 @@ public class TransactionService : ITransactionService
         // 3. Mettre à jour le portfolio
         var portfolio = await _portfolioService
             .GetPortfolioAsync(transaction.UserId);
+        if (portfolio == null)
+        {
+            await _portfolioService.CreatePortfolioAsync(
+                transaction.UserId,
+                "Mon Portefeuille");
+            portfolio = await _portfolioService
+                .GetPortfolioAsync(transaction.UserId);
+        }
+
         if (portfolio != null)
         {
             await _portfolioService.UpdatePortfolioLineAsync(

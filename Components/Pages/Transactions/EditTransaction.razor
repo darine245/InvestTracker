@@ -2,8 +2,12 @@
 @using InvestTracker.Models
 @using InvestTracker.Models.Enums
 @using InvestTracker.Services.Interfaces
+@using InvestTracker.Services
 @inject ITransactionService TransactionService
 @inject IAssetService AssetService
+@inject IUserService UserService
+@inject IPortfolioService PortfolioService
+@inject AuthState AuthState
 @inject NavigationManager NavigationManager
 
 <h3>💸 Nouvelle Transaction</h3>
@@ -119,10 +123,16 @@ else
     private Transaction currentTransaction = new();
     private List<Asset>? assets;
     private string errorMessage = string.Empty;
-    private int currentUserId = 1;
+    private int currentUserId => AuthState.CurrentUser!.Id;
 
     protected override async Task OnInitializedAsync()
     {
+        if (!AuthState.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
         assets = await AssetService.GetAssetsAsync();
         currentTransaction.UserId = currentUserId;
     }
@@ -130,23 +140,62 @@ else
     private async Task HandleValidSubmit()
     {
         errorMessage = string.Empty;
-        bool success;
+        currentTransaction.UserId = currentUserId;
 
-        if (currentTransaction.Type == TransactionType.Buy)
-            success = await TransactionService
-                .BuyAsync(currentTransaction);
-        else
-            success = await TransactionService
-                .SellAsync(currentTransaction);
-
-        if (success)
-            NavigationManager.NavigateTo("/transactions");
-        else
+        try
         {
-            // Afficher message d'erreur selon le type
-            errorMessage = currentTransaction.Type == TransactionType.Buy
-                ? "Budget insuffisant pour cet achat !"
-                : "Quantité insuffisante pour cette vente !";
+            bool success;
+
+            if (currentTransaction.Type == TransactionType.Buy)
+            {
+                var available = await UserService
+                    .GetAvailableBudgetAsync(currentUserId);
+                var cost = currentTransaction.Quantity
+                    * currentTransaction.PriceAtTransaction;
+
+                if (cost > available)
+                {
+                    errorMessage =
+                        $"Budget insuffisant pour cet achat ! (Disponible: {available:N2} €)";
+                    return;
+                }
+
+                success = await TransactionService
+                    .BuyAsync(currentTransaction);
+            }
+            else
+            {
+                var portfolio = await PortfolioService
+                    .GetPortfolioAsync(currentUserId);
+                var availableQty = portfolio?.Lines
+                    .FirstOrDefault(l =>
+                        l.AssetId == currentTransaction.AssetId)
+                    ?.Quantity ?? 0m;
+
+                if (currentTransaction.Quantity > availableQty)
+                {
+                    errorMessage =
+                        $"Quantité insuffisante pour cette vente ! (Disponible: {availableQty:N6})";
+                    return;
+                }
+
+                success = await TransactionService
+                    .SellAsync(currentTransaction);
+            }
+
+            if (success)
+                NavigationManager.NavigateTo("/transactions");
+            else
+            {
+                errorMessage = currentTransaction.Type
+                    == TransactionType.Buy
+                    ? "Budget insuffisant pour cet achat !"
+                    : "Quantité insuffisante pour cette vente !";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur serveur: {ex.Message}";
         }
     }
 }

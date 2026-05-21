@@ -1,6 +1,11 @@
 // Stocke les instances Chart.js pour pouvoir les détruire avant recréation
 const _charts = {};
 
+// Vérifie si Chart.js est disponible avant d'essayer de dessiner
+window.isChartJsAvailable = function() {
+    return typeof Chart !== 'undefined';
+};
+
 /**
  * Graphique Doughnut (camembert) — répartition par type d'actif
  * Appelé depuis Blazor via IJSRuntime
@@ -8,6 +13,10 @@ const _charts = {};
 window.renderDoughnutChart = function(canvasId, labels, values, colors) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js n\'est pas chargé.');
+        return;
+    }
 
     // Détruire l'ancienne instance si elle existe
     if (_charts[canvasId]) {
@@ -45,6 +54,10 @@ window.renderDoughnutChart = function(canvasId, labels, values, colors) {
 window.renderBarChart = function(canvasId, labels, values) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js n\'est pas chargé.');
+        return;
+    }
 
     if (_charts[canvasId]) {
         _charts[canvasId].destroy();
