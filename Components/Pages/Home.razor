@@ -1,0 +1,196 @@
+﻿@page "/"
+@rendermode InteractiveServer
+
+@inject AuthState AuthState
+@inject NavigationManager NavigationManager
+@inject IPortfolioService PortfolioService
+@inject ITransactionService TransactionService
+@inject IUserService UserService
+
+<h3>📊 Dashboard</h3>
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="alert alert-warning">
+        Vous devez être connecté pour voir le dashboard.
+        <a href="/login">Se connecter</a>
+    </div>
+}
+else
+{
+    <!-- KPIs avec StatCard -->
+    <div class="row mb-4">
+    <div class="col-md-3">
+        <StatCard
+            Icon="💰"
+            Title="Valeur du Portefeuille"
+            Value="@($"{totalValue:N2} €")"
+            Color="primary" />
+    </div>
+    <div class="col-md-3">
+        <StatCard
+            Icon="📈"
+            Title="Gain / Perte Global"
+            Value="@($"{(gainLoss >= 0 ? "+" : "")}{gainLoss:N2} €")"
+            SubValue="@($"{(gainLossPercent >= 0 ? "+" : "")}{gainLossPercent:N1} %")"
+            Color="@(gainLoss >= 0 ? "success" : "danger")" />
+    </div>
+    <div class="col-md-3">
+        <StatCard
+            Icon="💵"
+            Title="Budget Disponible"
+            Value="@($"{availableBudget:N2} €")"
+            Color="info" />
+    </div>
+    <div class="col-md-3">
+        <StatCard
+            Icon="🔄"
+            Title="Transactions"
+            Value="@($"{transactionCount}")"
+            Color="secondary" />
+    </div>
+</div>
+
+    <!-- Dernières transactions + Performance -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    🕐 Dernières Transactions
+                </div>
+                <div class="card-body p-0">
+                    @if (lastTransactions == null
+                        || !lastTransactions.Any())
+                    {
+                        <p class="p-3">Aucune transaction.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Actif</th>
+                                    <th>Type</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var tx in lastTransactions)
+                                {
+                                    <tr>
+                                        <td>
+                                            @tx.Date.ToString("dd/MM/yyyy")
+                                        </td>
+                                        <td>
+                                            <strong>@tx.Asset?.Symbol</strong>
+                                        </td>
+                                        <td>
+                                            @if (tx.Type ==
+                                                Models.Enums
+                                                .TransactionType.Buy)
+                                            {
+                                                <span class="badge bg-success">
+                                                    Achat
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">
+                                                    Vente
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @((tx.Quantity *
+                                                tx.PriceAtTransaction)
+                                                .ToString("N2")) €
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    🏆 Performance par Actif
+                </div>
+                <div class="card-body p-0">
+                    @if (performance == null || !performance.Any())
+                    {
+                        <p class="p-3">Aucune donnée.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var line in performance)
+                            {
+                                var gl = (line.Quantity
+                                    * line.Asset.CurrentPrice)
+                                    - (line.Quantity
+                                    * line.AverageBuyPrice);
+                                <li class="list-group-item d-flex
+                                    justify-content-between">
+                                    <strong>@line.Asset.Symbol</strong>
+                                    <span class="@(gl >= 0
+                                        ? "text-success" : "text-danger")">
+                                        @(gl >= 0 ? "+" : "")
+                                        @gl.ToString("N2") €
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private decimal totalValue;
+    private decimal gainLoss;
+    private decimal gainLossPercent;
+    private decimal availableBudget;
+    private int transactionCount;
+    private List<Transaction>? lastTransactions;
+    private List<PortfolioLine>? performance;
+    private int currentUserId => AuthState.CurrentUser?.Id ?? 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        try
+        {
+            totalValue = await PortfolioService
+                .GetTotalValueAsync(currentUserId);
+            gainLoss = await PortfolioService
+                .GetTotalGainLossAsync(currentUserId);
+            gainLossPercent = await PortfolioService
+                .GetTotalGainLossPercentAsync(currentUserId);
+            availableBudget = await UserService
+                .GetAvailableBudgetAsync(currentUserId);
+
+            var allTransactions = await TransactionService
+                .GetTransactionsAsync(currentUserId);
+            transactionCount = allTransactions.Count;
+            lastTransactions = allTransactions.Take(5).ToList();
+            performance = await PortfolioService
+                .GetPerformanceAsync(currentUserId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Home] Error: {ex.Message}");
+        }
+    }
+}

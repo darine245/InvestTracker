@@ -1,0 +1,89 @@
+﻿@using InvestTracker.Services
+@inject AuthState AuthState
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+@if (AuthState.IsAuthenticated)
+{
+    <div class="nav-scrollable"
+        onclick="(function(){var t=document.querySelector('.navbar-toggler'); if(t) t.click(); })()">
+        <nav class="flex-column">
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href=""
+                         Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill me-2"></span>
+                    Dashboard
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="assets">
+                    <span class="bi bi-graph-up me-2"></span>
+                    Actifs
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="transactions">
+                    <span class="bi bi-arrow-left-right me-2"></span>
+                    Transactions
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="portfolio">
+                    <span class="bi bi-pie-chart-fill me-2"></span>
+                    Portefeuille
+                </NavLink>
+            </div>
+
+            <hr class="text-white" />
+
+            <div class="nav-item px-3 text-white-50 small">
+                👤 @AuthState.CurrentUser?.FullName
+            </div>
+
+        </nav>
+    </div>
+
+    <!-- Bouton DEHORS du div onclick -->
+    <div class="px-3 mt-2">
+        <a href="/logout" class="btn btn-danger w-100">
+            🚪 Déconnexion
+        </a>
+    </div>
+}
+else
+{
+    <div class="nav-scrollable"
+        onclick="(function(){var t=document.querySelector('.navbar-toggler'); if(t) t.click(); })()">
+        <nav class="flex-column">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="login">
+                    <span class="bi bi-box-arrow-in-right me-2"></span>
+                    Se connecter
+                </NavLink>
+            </div>
+        </nav>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Rafraîchir le NavMenu à chaque navigation
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, 
+        Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

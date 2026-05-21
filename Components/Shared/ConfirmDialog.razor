@@ -1,0 +1,65 @@
+@* Composant de confirmation avant suppression *@
+
+@if (IsVisible)
+{
+    <!-- Fond sombre derrière la boîte -->
+    <div class="modal-backdrop fade show"></div>
+
+    <!-- Boîte de dialogue -->
+    <div class="modal fade show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        ⚠️ Confirmation
+                    </h5>
+                </div>
+
+                <div class="modal-body">
+                    <p>@Message</p>
+                </div>
+
+                <div class="modal-footer">
+                    <!-- Bouton Annuler -->
+                    <button class="btn btn-secondary"
+                            @onclick="HandleCancel">
+                        Annuler
+                    </button>
+
+                    <!-- Bouton Confirmer -->
+                    <button class="btn btn-danger"
+                            @onclick="HandleConfirm">
+                        🗑️ Supprimer
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // Afficher ou masquer la boîte
+    [Parameter] public bool IsVisible { get; set; } = false;
+
+    // Message affiché dans la boîte
+    [Parameter] public string Message { get; set; }
+        = "Êtes-vous sûr de vouloir supprimer cet élément ?";
+
+    // Événement déclenché quand l'utilisateur confirme
+    [Parameter] public EventCallback OnConfirm { get; set; }
+
+    // Événement déclenché quand l'utilisateur annule
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task HandleConfirm()
+    {
+        await OnConfirm.InvokeAsync();
+    }
+
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync();
+    }
+}

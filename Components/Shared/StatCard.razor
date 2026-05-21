@@ -1,0 +1,32 @@
+@* Composant réutilisable pour afficher une carte KPI *@
+
+<div class="card text-white @BackgroundClass mb-3">
+    <div class="card-body">
+        <h6 class="card-title">@Icon @Title</h6>
+        <h4>@Value</h4>
+        @if (!string.IsNullOrEmpty(SubValue))
+        {
+            <small>@SubValue</small>
+        }
+    </div>
+</div>
+
+@code {
+    // Titre de la carte
+    [Parameter] public string Title { get; set; } = string.Empty;
+
+    // Valeur principale affichée
+    [Parameter] public string Value { get; set; } = string.Empty;
+
+    // Valeur secondaire optionnelle (ex: pourcentage)
+    [Parameter] public string? SubValue { get; set; }
+
+    // Icône emoji
+    [Parameter] public string Icon { get; set; } = string.Empty;
+
+    // Couleur Bootstrap : primary, success, danger, info, secondary
+    [Parameter] public string Color { get; set; } = "primary";
+
+    // Propriété calculée → génère la classe CSS
+    private string BackgroundClass => $"bg-{Color}";
+}

@@ -1,0 +1,106 @@
+@page "/assets/edit"
+@page "/assets/edit/{Id:int}"
+@rendermode InteractiveServer
+@using InvestTracker.Models
+@using InvestTracker.Models.Enums
+@using InvestTracker.Services.Interfaces
+@inject IAssetService AssetService
+@inject NavigationManager NavigationManager
+
+<h3>@(Id.HasValue ? "✏️ Modifier l'Actif" : "➕ Nouvel Actif")</h3>
+
+@if (currentAsset == null)
+{
+    <p>Chargement...</p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-6">
+            <EditForm Model="currentAsset"
+                      OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                <!-- Nom -->
+                <div class="mb-3">
+                    <label class="form-label">Nom de l'actif</label>
+                    <InputText @bind-Value="currentAsset.Name"
+                               class="form-control"
+                               placeholder="Ex: Bitcoin" />
+                    <ValidationMessage
+                        For="@(() => currentAsset.Name)"
+                        class="text-danger" />
+                </div>
+
+                <!-- Symbole -->
+                <div class="mb-3">
+                    <label class="form-label">Symbole</label>
+                    <InputText @bind-Value="currentAsset.Symbol"
+                               class="form-control"
+                               placeholder="Ex: BTC" />
+                    <ValidationMessage
+                        For="@(() => currentAsset.Symbol)"
+                        class="text-danger" />
+                </div>
+
+                <!-- Type -->
+                <div class="mb-3">
+                    <label class="form-label">Type</label>
+                    <InputSelect @bind-Value="currentAsset.Type"
+                                 class="form-select">
+                        <option value="@AssetType.Stock">Stock</option>
+                        <option value="@AssetType.Crypto">Crypto</option>
+                    </InputSelect>
+                </div>
+
+                <!-- Prix -->
+                <div class="mb-3">
+                    <label class="form-label">Prix Actuel (€)</label>
+                    <InputNumber @bind-Value="currentAsset.CurrentPrice"
+                                 class="form-control"
+                                 placeholder="Ex: 62000.00" />
+                    <ValidationMessage
+                        For="@(() => currentAsset.CurrentPrice)"
+                        class="text-danger" />
+                </div>
+
+                <!-- Boutons -->
+                <button type="submit" class="btn btn-primary">
+                    💾 Enregistrer
+                </button>
+                <a href="/assets" class="btn btn-secondary ms-2">
+                    Annuler
+                </a>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private Asset? currentAsset;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+            // Mode édition → charger l'actif depuis la base
+            currentAsset = await AssetService.GetAssetByIdAsync(Id.Value);
+
+        // Mode création ou Id introuvable → objet vide
+        currentAsset ??= new Asset();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (Id.HasValue)
+            await AssetService.UpdateAssetAsync(currentAsset!);
+        else
+            await AssetService.AddAssetAsync(currentAsset!);
+
+        // Redirection vers la liste après sauvegarde
+        NavigationManager.NavigateTo("/assets");
+    }
+}

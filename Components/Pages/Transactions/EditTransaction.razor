@@ -1,0 +1,152 @@
+@page "/transactions/edit"
+@rendermode InteractiveServer
+@using InvestTracker.Models
+@using InvestTracker.Models.Enums
+@using InvestTracker.Services.Interfaces
+@inject ITransactionService TransactionService
+@inject IAssetService AssetService
+@inject NavigationManager NavigationManager
+
+<h3>💸 Nouvelle Transaction</h3>
+
+@if (assets == null)
+{
+    <p>Chargement...</p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Message d'erreur -->
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger">
+                    ❌ @errorMessage
+                </div>
+            }
+
+            <EditForm Model="currentTransaction"
+                      OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                <!-- Type de transaction -->
+                <div class="mb-3">
+                    <label class="form-label">Type</label>
+                    <InputSelect
+                        @bind-Value="currentTransaction.Type"
+                        class="form-select">
+                        <option value="@TransactionType.Buy">
+                            ↑ Achat
+                        </option>
+                        <option value="@TransactionType.Sell">
+                            ↓ Vente
+                        </option>
+                    </InputSelect>
+                </div>
+
+                <!-- Choix de l'actif -->
+                <div class="mb-3">
+                    <label class="form-label">Actif</label>
+                    <InputSelect
+                        @bind-Value="currentTransaction.AssetId"
+                        class="form-select">
+                        <option value="0">
+                            -- Sélectionnez un actif --
+                        </option>
+                        @foreach (var asset in assets)
+                        {
+                            <option value="@asset.Id">
+                                @asset.Symbol - @asset.Name
+                                (@asset.CurrentPrice.ToString("N2") €)
+                            </option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage
+                        For="@(() => currentTransaction.AssetId)"
+                        class="text-danger" />
+                </div>
+
+                <!-- Quantité -->
+                <div class="mb-3">
+                    <label class="form-label">Quantité</label>
+                    <InputNumber
+                        @bind-Value="currentTransaction.Quantity"
+                        class="form-control"
+                        placeholder="Ex: 0.5" />
+                    <ValidationMessage
+                        For="@(() => currentTransaction.Quantity)"
+                        class="text-danger" />
+                </div>
+
+                <!-- Prix unitaire -->
+                <div class="mb-3">
+                    <label class="form-label">
+                        Prix unitaire au moment de la transaction (€)
+                    </label>
+                    <InputNumber
+                        @bind-Value="currentTransaction.PriceAtTransaction"
+                        class="form-control"
+                        placeholder="Ex: 62000.00" />
+                    <ValidationMessage
+                        For="@(() => currentTransaction.PriceAtTransaction)"
+                        class="text-danger" />
+                </div>
+
+                <!-- Notes -->
+                <div class="mb-3">
+                    <label class="form-label">Notes (optionnel)</label>
+                    <InputText
+                        @bind-Value="currentTransaction.Notes"
+                        class="form-control"
+                        placeholder="Ex: Achat lors de la baisse" />
+                </div>
+
+                <!-- Boutons -->
+                <button type="submit" class="btn btn-primary">
+                    💾 Enregistrer
+                </button>
+                <a href="/transactions"
+                   class="btn btn-secondary ms-2">
+                    Annuler
+                </a>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private Transaction currentTransaction = new();
+    private List<Asset>? assets;
+    private string errorMessage = string.Empty;
+    private int currentUserId = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        assets = await AssetService.GetAssetsAsync();
+        currentTransaction.UserId = currentUserId;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        errorMessage = string.Empty;
+        bool success;
+
+        if (currentTransaction.Type == TransactionType.Buy)
+            success = await TransactionService
+                .BuyAsync(currentTransaction);
+        else
+            success = await TransactionService
+                .SellAsync(currentTransaction);
+
+        if (success)
+            NavigationManager.NavigateTo("/transactions");
+        else
+        {
+            // Afficher message d'erreur selon le type
+            errorMessage = currentTransaction.Type == TransactionType.Buy
+                ? "Budget insuffisant pour cet achat !"
+                : "Quantité insuffisante pour cette vente !";
+        }
+    }
+}

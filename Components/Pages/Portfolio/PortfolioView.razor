@@ -1,0 +1,188 @@
+@page "/portfolio"
+@rendermode InteractiveServer
+@using InvestTracker.Models
+@using InvestTracker.Services.Interfaces
+@inject IPortfolioService PortfolioService
+@inject IUserService UserService
+
+<h3>💼 Mon Portefeuille</h3>
+
+@if (lines == null)
+{
+    <p>Chargement...</p>
+}
+else
+{
+    <!-- KPIs -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h6 class="card-title">Valeur Totale</h6>
+                    <h4>@totalValue.ToString("N2") €</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white
+                @(gainLoss >= 0 ? "bg-success" : "bg-danger")">
+                <div class="card-body">
+                    <h6 class="card-title">Gain / Perte</h6>
+                    <h4>
+                        @(gainLoss >= 0 ? "+" : "")
+                        @gainLoss.ToString("N2") €
+                    </h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white
+                @(gainLossPercent >= 0 ? "bg-success" : "bg-danger")">
+                <div class="card-body">
+                    <h6 class="card-title">Performance</h6>
+                    <h4>
+                        @(gainLossPercent >= 0 ? "+" : "")
+                        @gainLossPercent.ToString("N2") %
+                    </h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h6 class="card-title">Budget Disponible</h6>
+                    <h4>@availableBudget.ToString("N2") €</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Répartition par type -->
+    @if (allocation.Any())
+    {
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        📊 Répartition par Type
+                    </div>
+                    <div class="card-body">
+                        @foreach (var item in allocation)
+                        {
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span>@item.Key</span>
+                                    <strong>@item.Value.ToString("N1") %</strong>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar
+                                        @(item.Key == "Crypto"
+                                            ? "bg-warning"
+                                            : "bg-primary")"
+                                        style="width: @item.Value%">
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Tableau des lignes -->
+    @if (!lines.Any())
+    {
+        <div class="alert alert-info">
+            Votre portefeuille est vide.
+            <a href="/transactions/edit">Faire une transaction</a>
+        </div>
+    }
+    else
+    {
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Actif</th>
+                    <th>Type</th>
+                    <th>Quantité</th>
+                    <th>Prix Moyen Achat</th>
+                    <th>Prix Actuel</th>
+                    <th>Valeur Actuelle</th>
+                    <th>Gain / Perte</th>
+                    <th>Performance</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var line in lines)
+                {
+                    var currentVal = line.Quantity
+                        * line.Asset.CurrentPrice;
+                    var cost = line.Quantity * line.AverageBuyPrice;
+                    var gl = currentVal - cost;
+                    var glPct = cost > 0
+                        ? (gl / cost) * 100 : 0;
+
+                    <tr>
+                        <td>
+                            <strong>@line.Asset.Symbol</strong>
+                            <br/>
+                            <small class="text-muted">
+                                @line.Asset.Name
+                            </small>
+                        </td>
+                        <td>@line.Asset.Type</td>
+                        <td>@line.Quantity</td>
+                        <td>
+                            @line.AverageBuyPrice.ToString("N2") €
+                        </td>
+                        <td>
+                            @line.Asset.CurrentPrice.ToString("N2") €
+                        </td>
+                        <td>
+                            <strong>@currentVal.ToString("N2") €</strong>
+                        </td>
+                        <td class="@(gl >= 0
+                            ? "text-success" : "text-danger")">
+                            <strong>
+                                @(gl >= 0 ? "+" : "")
+                                @gl.ToString("N2") €
+                            </strong>
+                        </td>
+                        <td class="@(glPct >= 0
+                            ? "text-success" : "text-danger")">
+                            @(glPct >= 0 ? "+" : "")
+                            @glPct.ToString("N1") %
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private List<PortfolioLine>? lines;
+    private decimal totalValue;
+    private decimal gainLoss;
+    private decimal gainLossPercent;
+    private decimal availableBudget;
+    private Dictionary<string, decimal> allocation = new();
+    private int currentUserId = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        lines = await PortfolioService
+            .GetPortfolioLinesAsync(currentUserId);
+        totalValue = await PortfolioService
+            .GetTotalValueAsync(currentUserId);
+        gainLoss = await PortfolioService
+            .GetTotalGainLossAsync(currentUserId);
+        gainLossPercent = await PortfolioService
+            .GetTotalGainLossPercentAsync(currentUserId);
+        availableBudget = await UserService
+            .GetAvailableBudgetAsync(currentUserId);
+        allocation = await PortfolioService
+            .GetAllocationByTypeAsync(currentUserId);
+    }
+}

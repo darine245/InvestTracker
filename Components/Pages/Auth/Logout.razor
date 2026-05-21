@@ -1,0 +1,15 @@
+@page "/logout"
+@rendermode InteractiveServer
+@using InvestTracker.Services
+@inject AuthState AuthState
+@inject NavigationManager NavigationManager
+
+<p>Déconnexion en cours...</p>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AuthState.Logout();
+        NavigationManager.NavigateTo("/login");
+    }
+}

@@ -1,0 +1,108 @@
+@page "/login"
+@rendermode InteractiveServer
+@using InvestTracker.Services
+@using InvestTracker.Models
+@inject AuthState AuthState
+@inject NavigationManager NavigationManager
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow">
+
+            <div class="card-header bg-primary text-white text-center">
+                <h4>🔐 InvestTracker</h4>
+                <p class="mb-0">Connectez-vous</p>
+            </div>
+
+            <div class="card-body">
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">
+                        ❌ @errorMessage
+                    </div>
+                }
+
+                <EditForm Model="loginModel"
+                          OnSubmit="HandleLogin">
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Nom d'utilisateur
+                        </label>
+                        <InputText
+                            @bind-Value="loginModel.Username"
+                            class="form-control"
+                            placeholder="admin" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mot de passe</label>
+                        <InputText
+                            @bind-Value="loginModel.Password"
+                            type="password"
+                            class="form-control"
+                            placeholder="••••••" />
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-primary w-100">
+                        Se connecter
+                    </button>
+
+                </EditForm>
+            </div>
+
+            <div class="card-footer text-muted text-center">
+                <small>
+                    Compte test : <strong>admin</strong> /
+                    <strong>admin</strong>
+                </small>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new();
+    private string errorMessage = string.Empty;
+
+    // Modèle dédié au formulaire
+    private class LoginModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    protected override void OnInitialized()
+    {
+        if (AuthState.IsAuthenticated)
+            NavigationManager.NavigateTo("/");
+    }
+
+    private void HandleLogin()
+    {
+        errorMessage = string.Empty;
+
+        if (loginModel.Username.Trim() == "admin"
+            && loginModel.Password.Trim() == "admin")
+        {
+            var fakeUser = new User
+            {
+                Id = 1,
+                FullName = "Administrateur",
+                Email = "admin@investtracker.com",
+                InvestmentBudget = 50000m
+            };
+
+            AuthState.Login(fakeUser);
+
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Nom d'utilisateur ou mot de passe incorrect.";
+        }
+    }
+}
