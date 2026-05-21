@@ -15,7 +15,7 @@ public class UserService : IUserService
     {
         _context = context;
     }
-  // ===== NOUVEAU : hash SHA-256 =====
+  // ===== NOUVEAU : hash SHA-256==
     public static string HashPassword(string password)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
@@ -64,6 +64,7 @@ public class UserService : IUserService
         {
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
+
         }
     }
 
