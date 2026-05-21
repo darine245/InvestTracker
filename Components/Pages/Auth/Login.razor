@@ -1,62 +1,83 @@
 @page "/login"
-@rendermode InteractiveServer
 @using InvestTracker.Services
-@using InvestTracker.Models
+@using InvestTracker.Services.Interfaces
+@using System.ComponentModel.DataAnnotations
 @inject AuthState AuthState
+@inject IUserService UserService
 @inject NavigationManager NavigationManager
+
+<PageTitle>Connexion — InvestTracker</PageTitle>
 
 <div class="row justify-content-center mt-5">
     <div class="col-md-4">
         <div class="card shadow">
 
-            <div class="card-header bg-primary text-white text-center">
-                <h4>🔐 InvestTracker</h4>
-                <p class="mb-0">Connectez-vous</p>
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h4 class="mb-1">🔐 InvestTracker</h4>
+                <p class="mb-0 opacity-75">Connectez-vous à votre compte</p>
             </div>
 
-            <div class="card-body">
+            <div class="card-body p-4">
 
                 @if (!string.IsNullOrEmpty(errorMessage))
                 {
-                    <div class="alert alert-danger">
-                        ❌ @errorMessage
-                    </div>
+                    <div class="alert alert-danger">❌ @errorMessage</div>
                 }
 
                 <EditForm Model="loginModel"
-                          OnSubmit="HandleLogin">
+                          OnValidSubmit="HandleLogin"
+                          FormName="login-form">   @* ← OnValidSubmit *@
+
+
+                    <DataAnnotationsValidator />          @* ← validation active *@
+                    <ValidationSummary />
+
 
                     <div class="mb-3">
-                        <label class="form-label">
+                        <label class="form-label fw-semibold">
                             Nom d'utilisateur
                         </label>
-                        <InputText
-                            @bind-Value="loginModel.Username"
-                            class="form-control"
-                            placeholder="admin" />
+                        <InputText @bind-Value="loginModel.Username"
+                                   class="form-control"
+                                   placeholder="ahmed" />
+                        <ValidationMessage For="() => loginModel.Username" />
+
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Mot de passe</label>
-                        <InputText
-                            @bind-Value="loginModel.Password"
-                            type="password"
-                            class="form-control"
-                            placeholder="••••••" />
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            Mot de passe
+                        </label>
+                        <InputText @bind-Value="loginModel.Password"
+                                   type="password"
+                                   class="form-control"
+                                   placeholder="••••••" />
+                        <ValidationMessage For="() => loginModel.Password" />
+
                     </div>
 
                     <button type="submit"
-                            class="btn btn-primary w-100">
-                        Se connecter
+                            class="btn btn-primary w-100"
+                            disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                           <span> Connexion</span>
+                        }
+                        else
+                        {
+                           <span> Se connecter</span>
+                        }
                     </button>
 
                 </EditForm>
+
             </div>
 
             <div class="card-footer text-muted text-center">
                 <small>
-                    Compte test : <strong>admin</strong> /
-                    <strong>admin</strong>
+                    Compte test : <strong>ahmed</strong> /
+                    <strong>ahmed123</strong>
                 </small>
             </div>
 
@@ -65,15 +86,25 @@
 </div>
 
 @code {
-    private LoginModel loginModel = new();
-    private string errorMessage = string.Empty;
 
-    // Modèle dédié au formulaire
+    // Modèle avec Data Annotations — le prof les exige
     private class LoginModel
     {
+        [Required(ErrorMessage = "Le nom d'utilisateur est obligatoire.")]
+        [StringLength(50, MinimumLength = 3,
+            ErrorMessage = "Entre 3 et 50 caractères.")]
         public string Username { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Le mot de passe est obligatoire.")]
+        [StringLength(100, MinimumLength = 4,
+            ErrorMessage = "Minimum 4 caractères.")]
         public string Password { get; set; } = string.Empty;
     }
+
+
+    private LoginModel loginModel = new();
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
 
     protected override void OnInitialized()
     {
@@ -81,28 +112,35 @@
             NavigationManager.NavigateTo("/");
     }
 
-    private void HandleLogin()
+    // async + interroge la BD via UserService
+    private async Task HandleLogin()
     {
         errorMessage = string.Empty;
+        isLoading = true;
 
-        if (loginModel.Username.Trim() == "admin"
-            && loginModel.Password.Trim() == "admin")
+        try
         {
-            var fakeUser = new User
+            var user = await UserService.AuthenticateAsync(
+                loginModel.Username.Trim(),
+                loginModel.Password);
+
+            if (user != null)
             {
-                Id = 1,
-                FullName = "Administrateur",
-                Email = "admin@investtracker.com",
-                InvestmentBudget = 50000m
-            };
+                AuthState.Login(user);
+                NavigationManager.NavigateTo("/");
+                return;
+            }
 
-            AuthState.Login(fakeUser);
-
-            NavigationManager.NavigateTo("/");
-        }
-        else
-        {
             errorMessage = "Nom d'utilisateur ou mot de passe incorrect.";
         }
+        catch
+        {
+            errorMessage = "Erreur serveur pendant la connexion.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
+
 }

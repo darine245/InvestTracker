@@ -1,11 +1,13 @@
 @page "/portfolio"
-@rendermode InteractiveServer
 @using InvestTracker.Models
 @using InvestTracker.Services.Interfaces
 @inject IPortfolioService PortfolioService
 @inject IUserService UserService
+@inject AuthState AuthState
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 
-<h3>💼 Mon Portefeuille</h3>
+<PageTitle>Portefeuille — InvestTracker</PageTitle>
 
 @if (lines == null)
 {
@@ -13,6 +15,11 @@
 }
 else
 {
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>💼 Mon Portefeuille</h3>
+        <span class="text-muted small">👤 @AuthState.CurrentUser?.FullName</span>
+
+    </div>
     <!-- KPIs -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -57,38 +64,34 @@ else
         </div>
     </div>
 
-    <!-- Répartition par type -->
-    @if (allocation.Any())
+    <!-- ===== GRAPHIQUES ===== -->
+    @if (lines.Any())
     {
         <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        📊 Répartition par Type
-                    </div>
-                    <div class="card-body">
-                        @foreach (var item in allocation)
-                        {
-                            <div class="mb-2">
-                                <div class="d-flex justify-content-between">
-                                    <span>@item.Key</span>
-                                    <strong>@item.Value.ToString("N1") %</strong>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar
-                                        @(item.Key == "Crypto"
-                                            ? "bg-warning"
-                                            : "bg-primary")"
-                                        style="width: @item.Value%">
-                                    </div>
-                                </div>
-                            </div>
-                        }
+
+            <!-- Graphique 1 : Doughnut — répartition par type -->
+            <div class="col-md-5">
+                <div class="card h-100">
+                    <div class="card-header fw-semibold">🥧 Répartition par Type</div>
+                    <div class="card-body d-flex justify-content-center align-items-center">
+                        <canvas id="doughnutChart" style="max-height:260px"></canvas>
                     </div>
                 </div>
             </div>
+
+            <!-- Graphique 2 : Barres — gain/perte par actif -->
+            <div class="col-md-7">
+                <div class="card h-100">
+                    <div class="card-header fw-semibold">📊 Gain / Perte par Actif</div>
+                    <div class="card-body">
+                        <canvas id="barChart" style="max-height:260px"></canvas>
+                    </div>
+                </div>
+            </div>
+
         </div>
     }
+
 
     <!-- Tableau des lignes -->
     @if (!lines.Any())
@@ -168,10 +171,18 @@ else
     private decimal gainLossPercent;
     private decimal availableBudget;
     private Dictionary<string, decimal> allocation = new();
-    private int currentUserId = 1;
+            // Lecture depuis AuthState — plus de hardcode
+    private int currentUserId => AuthState.CurrentUser!.Id;
+    
 
     protected override async Task OnInitializedAsync()
     {
+         // Redirection si non connecté
+        if (!AuthState.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
         lines = await PortfolioService
             .GetPortfolioLinesAsync(currentUserId);
         totalValue = await PortfolioService
@@ -184,5 +195,41 @@ else
             .GetAvailableBudgetAsync(currentUserId);
         allocation = await PortfolioService
             .GetAllocationByTypeAsync(currentUserId);
+    }
+        // OnAfterRenderAsync : le DOM existe ici → on peut appeler Chart.js
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && lines != null && lines.Any())
+        {
+            await RenderChartsAsync();
+        }
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        // ── Graphique 1 : Doughnut — répartition en % par type ──
+        var doughnutLabels = allocation.Keys.ToArray();
+        var doughnutValues = allocation.Values.Select(v => (double)v).ToArray();
+        var doughnutColors = new[] { "#f0ad4e", "#0d6efd", "#20c997", "#dc3545" };
+
+        await JS.InvokeVoidAsync("renderDoughnutChart",
+            "doughnutChart",
+            doughnutLabels,
+            doughnutValues,
+            doughnutColors);
+
+        // ── Graphique 2 : Barres — gain/perte par actif ──
+        var barLabels = lines!.Select(l => l.Asset.Symbol).ToArray();
+        var barValues = lines!.Select(l =>
+        {
+            var currentVal = (double)(l.Quantity * l.Asset.CurrentPrice);
+            var cost       = (double)(l.Quantity * l.AverageBuyPrice);
+            return currentVal - cost;
+        }).ToArray();
+
+        await JS.InvokeVoidAsync("renderBarChart",
+            "barChart",
+            barLabels,
+            barValues);
     }
 }

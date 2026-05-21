@@ -1,10 +1,15 @@
 @page "/transactions"
-@rendermode InteractiveServer
 @using InvestTracker.Models
 @using InvestTracker.Models.Enums
 @using InvestTracker.Services.Interfaces
+@using InvestTracker.Services
 @inject ITransactionService TransactionService
 @inject IAssetService AssetService
+@inject AuthState AuthState
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Transactions — InvestTracker</PageTitle>
 
 <h3>💸 Historique des Transactions</h3>
 
@@ -29,9 +34,7 @@
             {
                 @foreach (var asset in assets)
                 {
-                    <option value="@asset.Id">
-                        @asset.Symbol - @asset.Name
-                    </option>
+                    <option value="@asset.Id">@asset.Symbol - @asset.Name</option>
                 }
             }
         </select>
@@ -67,36 +70,20 @@ else
             {
                 <tr>
                     <td>@tx.Date.ToString("dd/MM/yyyy")</td>
-                    <td>
-                        <strong>@tx.Asset?.Symbol</strong>
-                    </td>
+                    <td><strong>@tx.Asset?.Symbol</strong></td>
                     <td>
                         @if (tx.Type == TransactionType.Buy)
-                        {
-                            <span class="badge bg-success">
-                                ↑ Achat
-                            </span>
-                        }
+                        { <span class="badge bg-success">↑ Achat</span> }
                         else
-                        {
-                            <span class="badge bg-danger">
-                                ↓ Vente
-                            </span>
-                        }
+                        { <span class="badge bg-danger">↓ Vente</span> }
                     </td>
                     <td>@tx.Quantity</td>
                     <td>@tx.PriceAtTransaction.ToString("N2") €</td>
-                    <td>
-                        <strong>
-                            @((tx.Quantity * tx.PriceAtTransaction)
-                                .ToString("N2")) €
-                        </strong>
-                    </td>
+                    <td><strong>@((tx.Quantity * tx.PriceAtTransaction).ToString("N2")) €</strong></td>
                     <td>@tx.Notes</td>
                     <td>
-                        <button
-                            class="btn btn-sm btn-outline-danger"
-                            @onclick="() => DeleteTransaction(tx.Id)">
+                        <button class="btn btn-sm btn-outline-danger"
+                                @onclick="() => DeleteTransaction(tx.Id)">
                             🗑️
                         </button>
                     </td>
@@ -104,20 +91,26 @@ else
             }
         </tbody>
     </table>
-    <p class="text-muted">
-        Total : @transactions.Count transaction(s)
-    </p>
+    <p class="text-muted">Total : @transactions.Count transaction(s)</p>
 }
 
 @code {
     private List<Transaction>? transactions;
     private List<Asset>? assets;
 
-    // userId fixe pour l'instant (sera dynamique après auth)
-    private int currentUserId = 1;
+    // Lecture depuis AuthState — plus de hardcode
+    private int currentUserId => AuthState.CurrentUser!.Id;
+
 
     protected override async Task OnInitializedAsync()
     {
+        // Redirection si non connecté
+        if (!AuthState.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
         assets = await AssetService.GetAssetsAsync();
         await LoadTransactions();
     }

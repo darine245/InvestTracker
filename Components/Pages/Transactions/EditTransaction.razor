@@ -1,5 +1,4 @@
 @page "/transactions/edit"
-@rendermode InteractiveServer
 @using InvestTracker.Models
 @using InvestTracker.Models.Enums
 @using InvestTracker.Services.Interfaces
@@ -26,7 +25,8 @@ else
             }
 
             <EditForm Model="currentTransaction"
-                      OnValidSubmit="HandleValidSubmit">
+                      OnValidSubmit="HandleValidSubmit"
+                      FormName="transaction-form">
                 <DataAnnotationsValidator />
                 <ValidationSummary class="text-danger" />
 

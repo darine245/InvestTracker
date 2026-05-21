@@ -1,6 +1,5 @@
 @page "/assets/edit"
 @page "/assets/edit/{Id:int}"
-@rendermode InteractiveServer
 @using InvestTracker.Models
 @using InvestTracker.Models.Enums
 @using InvestTracker.Services.Interfaces
@@ -18,7 +17,8 @@ else
     <div class="row">
         <div class="col-md-6">
             <EditForm Model="currentAsset"
-                      OnValidSubmit="HandleValidSubmit">
+                      OnValidSubmit="HandleValidSubmit"
+                      FormName="asset-form">
                 <DataAnnotationsValidator />
                 <ValidationSummary class="text-danger" />
 

@@ -16,7 +16,8 @@ var connectionString = builder.Configuration
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         connectionString,
-        new MySqlServerVersion(new Version(8, 0, 0))
+        new MySqlServerVersion(new Version(8, 0, 0)),
+        mySqlOptions => mySqlOptions.EnableRetryOnFailure()
     ));
 
 // ⚠️ Ordre important !
@@ -27,8 +28,8 @@ builder.Services.AddScoped<IPortfolioService, PortfolioService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 // AuthState holds per-user UI state. Use singleton here so layout/menu
 // instances (including prerendered parts) observe changes reliably.
-builder.Services.AddSingleton<AuthState>();
 
+builder.Services.AddScoped<AuthState>(); 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())

@@ -102,6 +102,7 @@ C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\InvestTracker.AssemblyInfoInputs.ca
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\InvestTracker.AssemblyInfo.cs
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\InvestTracker.csproj.CoreCompileInputs.cache
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\InvestTracker.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\InvestTracker.sourcelink.json
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\rjimswa.dswa.cache.json
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
@@ -111,6 +112,7 @@ C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\scopedcss\Components\Layout\Reconne
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\scopedcss\bundle\InvestTracker.styles.css
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\scopedcss\projectbundle\InvestTracker.bundle.scp.css
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\1wbceghzzm-{0}-khy4lop6wu-khy4lop6wu.gz
+C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\svkit0ob6s-{0}-3wkjzgzi1q-3wkjzgzi1q.gz
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\fcat42zdx9-{0}-bqjiyaj88i-bqjiyaj88i.gz
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\uko1ghgwn1-{0}-c2jlpeoesf-c2jlpeoesf.gz
 C:\Users\ASUS\InvestTracker\obj\Debug\net9.0\compressed\kcwl6e3v5m-{0}-erw9l3u2r3-erw9l3u2r3.gz
