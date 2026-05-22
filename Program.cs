@@ -26,10 +26,9 @@ builder.Services.AddScoped<IAssetService, AssetService>();
 // Portfolio AVANT Transaction car Transaction dépend de Portfolio
 builder.Services.AddScoped<IPortfolioService, PortfolioService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
-// AuthState holds per-user UI state. Use singleton here so layout/menu
-// instances (including prerendered parts) observe changes reliably.
 
-builder.Services.AddScoped<AuthState>(); 
+builder.Services.AddScoped<AuthState>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -40,6 +39,20 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<AppDbContext>();
         await context.Database.MigrateAsync();
         await DbSeeder.SeedAsync(context);
+
+        // ── CORRECTION : reconstruire tous les portefeuilles
+        // au démarrage pour corriger les suppressions passées
+        // qui n'avaient pas mis à jour le portefeuille.
+        // À retirer après la première exécution si vous voulez,
+        // mais ça ne coûte rien de le garder (très rapide).
+        var portfolioService = services
+            .GetRequiredService<IPortfolioService>();
+        var userIds = context.Users.Select(u => u.Id).ToList();
+        foreach (var uid in userIds)
+        {
+            await portfolioService.RebuildPortfolioAsync(uid);
+            Console.WriteLine($"✅ Portefeuille reconstruit pour userId={uid}");
+        }
     }
     catch (Exception ex)
     {

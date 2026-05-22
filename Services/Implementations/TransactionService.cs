@@ -144,12 +144,22 @@ public class TransactionService : ITransactionService
     }
 
     public async Task DeleteTransactionAsync(int id)
+{
+    var transaction = await _context.Transactions.FindAsync(id);
+    if (transaction == null) return;
+
+    // Annuler l'effet sur le portefeuille
+    var portfolio = await _portfolioService.GetPortfolioAsync(transaction.UserId);
+    if (portfolio != null)
     {
-        var transaction = await _context.Transactions.FindAsync(id);
-        if (transaction != null)
-        {
-            _context.Transactions.Remove(transaction);
-            await _context.SaveChangesAsync();
-        }
+        bool isBuyReversal = transaction.Type == TransactionType.Sell;
+        await _portfolioService.UpdatePortfolioLineAsync(
+            portfolio.Id, transaction.AssetId,
+            transaction.Quantity, transaction.PriceAtTransaction,
+            isBuy: isBuyReversal);
     }
+
+    _context.Transactions.Remove(transaction);
+    await _context.SaveChangesAsync();
+}
 }

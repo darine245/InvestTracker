@@ -46,6 +46,6 @@ public class PortfolioLine
     [NotMapped]
     public decimal GainLossPercent =>
         AverageBuyPrice > 0
-        ? ((Asset?.CurrentPrice ?? 0 - AverageBuyPrice) / AverageBuyPrice) * 100
+       ? (((Asset?.CurrentPrice ?? 0) - AverageBuyPrice) / AverageBuyPrice) * 100
         : 0;
 }

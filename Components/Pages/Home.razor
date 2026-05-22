@@ -50,6 +50,7 @@ else
     </div>
 </div>
 
+
     <!-- Dernières transactions + Performance -->
     <div class="row">
         <div class="col-md-8">
@@ -159,7 +160,7 @@ else
     private int transactionCount;
     private List<Transaction>? lastTransactions;
     private List<PortfolioLine>? performance;
-    private int currentUserId => AuthState.CurrentUser?.Id ?? 1;
+   private int currentUserId => AuthState.CurrentUser!.Id;
 
     protected override async Task OnInitializedAsync()
     {

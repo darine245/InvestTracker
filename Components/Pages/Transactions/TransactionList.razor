@@ -8,7 +8,6 @@
 @inject AuthState AuthState
 @inject NavigationManager NavigationManager
 
-
 <PageTitle>Transactions — InvestTracker</PageTitle>
 
 <h3>💸 Historique des Transactions</h3>
@@ -83,7 +82,7 @@ else
                     <td>@tx.Notes</td>
                     <td>
                         <button class="btn btn-sm btn-outline-danger"
-                                @onclick="() => DeleteTransaction(tx.Id)">
+                                @onclick="() => AskDelete(tx.Id, tx.Asset?.Symbol, tx.Quantity)">
                             🗑️
                         </button>
                     </td>
@@ -94,17 +93,26 @@ else
     <p class="text-muted">Total : @transactions.Count transaction(s)</p>
 }
 
+<!-- ConfirmDialog : affiché seulement quand showConfirm = true -->
+<ConfirmDialog
+    IsVisible="showConfirm"
+    Message="@confirmMessage"
+    OnConfirm="ConfirmDelete"
+    OnCancel="CancelDelete" />
+
 @code {
     private List<Transaction>? transactions;
     private List<Asset>? assets;
 
-    // Lecture depuis AuthState — plus de hardcode
     private int currentUserId => AuthState.CurrentUser!.Id;
 
+    // ── Variables pour la confirmation ──
+    private bool showConfirm = false;
+    private int  pendingDeleteId;
+    private string confirmMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        // Redirection si non connecté
         if (!AuthState.IsAuthenticated)
         {
             NavigationManager.NavigateTo("/login");
@@ -144,9 +152,28 @@ else
                 .GetTransactionsByAssetAsync(currentUserId, value);
     }
 
-    private async Task DeleteTransaction(int id)
+    // Étape 1 : clic sur 🗑️ → ouvrir la boîte de confirmation
+    private void AskDelete(int id, string? symbol, decimal qty)
     {
-        await TransactionService.DeleteTransactionAsync(id);
+        pendingDeleteId = id;
+        confirmMessage  =
+            $"Supprimer la transaction de {qty} {symbol ?? "actif"} ? " +
+            $"Le portefeuille sera mis à jour automatiquement.";
+        showConfirm = true;
+    }
+
+    // Étape 2a : l'utilisateur clique « Supprimer »
+    private async Task ConfirmDelete()
+    {
+        showConfirm = false;
+        await TransactionService.DeleteTransactionAsync(pendingDeleteId);
         await LoadTransactions();
+    }
+
+    // Étape 2b : l'utilisateur clique « Annuler »
+    private void CancelDelete()
+    {
+        showConfirm     = false;
+        pendingDeleteId = 0;
     }
 }

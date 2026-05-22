@@ -11,18 +11,15 @@ public interface IPortfolioService
     Task<List<PortfolioLine>> GetPortfolioLinesAsync(int userId);
 
     // Valeur totale actuelle du portfolio
-    // Somme de (Quantité × Prix actuel) pour chaque ligne
     Task<decimal> GetTotalValueAsync(int userId);
 
     // Gain/perte global en montant
-    // Valeur actuelle - total investi
     Task<decimal> GetTotalGainLossAsync(int userId);
 
     // Gain/perte global en pourcentage
     Task<decimal> GetTotalGainLossPercentAsync(int userId);
 
     // Répartition par type d'actif (pour le graphique)
-    // Retourne : { "Stock": 60.5, "Crypto": 39.5 } en %
     Task<Dictionary<string, decimal>> GetAllocationByTypeAsync(int userId);
 
     // Performance par actif (gain/perte par ligne)
@@ -36,4 +33,8 @@ public interface IPortfolioService
         int portfolioId, int assetId,
         decimal quantity, decimal price,
         bool isBuy);
+
+    // Reconstruire le portfolio depuis l'historique des transactions
+    // (à appeler pour corriger un portefeuille désynchronisé)
+    Task RebuildPortfolioAsync(int userId);
 }

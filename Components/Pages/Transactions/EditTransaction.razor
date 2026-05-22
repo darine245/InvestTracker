@@ -20,6 +20,7 @@ else
 {
     <div class="row">
         <div class="col-md-6">
+
             <!-- Message d'erreur -->
             @if (!string.IsNullOrEmpty(errorMessage))
             {
@@ -39,13 +40,10 @@ else
                     <label class="form-label">Type</label>
                     <InputSelect
                         @bind-Value="currentTransaction.Type"
+                        @bind-Value:after="OnTypeOrAssetChanged"
                         class="form-select">
-                        <option value="@TransactionType.Buy">
-                            ↑ Achat
-                        </option>
-                        <option value="@TransactionType.Sell">
-                            ↓ Vente
-                        </option>
+                        <option value="@TransactionType.Buy">↑ Achat</option>
+                        <option value="@TransactionType.Sell">↓ Vente</option>
                     </InputSelect>
                 </div>
 
@@ -54,10 +52,9 @@ else
                     <label class="form-label">Actif</label>
                     <InputSelect
                         @bind-Value="currentTransaction.AssetId"
+                        @bind-Value:after="OnTypeOrAssetChanged"
                         class="form-select">
-                        <option value="0">
-                            -- Sélectionnez un actif --
-                        </option>
+                        <option value="0">-- Sélectionnez un actif --</option>
                         @foreach (var asset in assets)
                         {
                             <option value="@asset.Id">
@@ -81,6 +78,15 @@ else
                     <ValidationMessage
                         For="@(() => currentTransaction.Quantity)"
                         class="text-danger" />
+
+                    <!-- Aide : quantité disponible en vente -->
+                    @if (currentTransaction.Type == TransactionType.Sell
+                         && availableQty > 0)
+                    {
+                        <div class="form-text text-muted">
+                            Disponible dans votre portefeuille : <strong>@availableQty</strong>
+                        </div>
+                    }
                 </div>
 
                 <!-- Prix unitaire -->
@@ -88,14 +94,50 @@ else
                     <label class="form-label">
                         Prix unitaire au moment de la transaction (€)
                     </label>
-                    <InputNumber
-                        @bind-Value="currentTransaction.PriceAtTransaction"
-                        class="form-control"
-                        placeholder="Ex: 62000.00" />
-                    <ValidationMessage
-                        For="@(() => currentTransaction.PriceAtTransaction)"
-                        class="text-danger" />
+
+                    @if (currentTransaction.Type == TransactionType.Sell
+                         && currentTransaction.AssetId > 0)
+                    {
+                        <!-- VENTE : prix actuel du marché, verrouillé -->
+                        <input type="text"
+                               class="form-control bg-light"
+                               value="@currentTransaction.PriceAtTransaction.ToString("N2") €"
+                               readonly />
+                        <div class="form-text text-muted">
+                            Prix actuel du marché appliqué automatiquement.
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- ACHAT : prix saisissable librement -->
+                        <InputNumber
+                            @bind-Value="currentTransaction.PriceAtTransaction"
+                            class="form-control"
+                            placeholder="Ex: 62000.00" />
+                        <ValidationMessage
+                            For="@(() => currentTransaction.PriceAtTransaction)"
+                            class="text-danger" />
+                    }
                 </div>
+
+                <!-- Résumé total -->
+                @if (currentTransaction.Quantity > 0
+                     && currentTransaction.PriceAtTransaction > 0)
+                {
+                    var total = currentTransaction.Quantity
+                                * currentTransaction.PriceAtTransaction;
+                    var isBuy = currentTransaction.Type == TransactionType.Buy;
+                    <div class="alert @(isBuy ? "alert-info" : "alert-success") py-2 mb-3">
+                        @(isBuy ? "💰 Coût total" : "💵 Montant récupéré") :
+                        <strong>@total.ToString("N2") €</strong>
+                        @if (isBuy)
+                        {
+                            <span class="ms-2 text-muted">
+                                (Budget disponible : @availableBudget.ToString("N2") €)
+                            </span>
+                        }
+                    </div>
+                }
 
                 <!-- Notes -->
                 <div class="mb-3">
@@ -110,10 +152,10 @@ else
                 <button type="submit" class="btn btn-primary">
                     💾 Enregistrer
                 </button>
-                <a href="/transactions"
-                   class="btn btn-secondary ms-2">
+                <a href="/transactions" class="btn btn-secondary ms-2">
                     Annuler
                 </a>
+
             </EditForm>
         </div>
     </div>
@@ -122,7 +164,10 @@ else
 @code {
     private Transaction currentTransaction = new();
     private List<Asset>? assets;
-    private string errorMessage = string.Empty;
+    private string errorMessage  = string.Empty;
+    private decimal availableQty = 0m;
+    private decimal availableBudget = 0m;
+
     private int currentUserId => AuthState.CurrentUser!.Id;
 
     protected override async Task OnInitializedAsync()
@@ -135,6 +180,43 @@ else
 
         assets = await AssetService.GetAssetsAsync();
         currentTransaction.UserId = currentUserId;
+        availableBudget = await UserService
+            .GetAvailableBudgetAsync(currentUserId);
+    }
+
+    // Appelé chaque fois que le type OU l'actif change
+    private async Task OnTypeOrAssetChanged()
+    {
+        if (currentTransaction.AssetId <= 0) return;
+
+        var selectedAsset = assets?
+            .FirstOrDefault(a => a.Id == currentTransaction.AssetId);
+
+        if (selectedAsset == null) return;
+
+        if (currentTransaction.Type == TransactionType.Sell)
+        {
+            // Vente : prix verrouillé sur le CurrentPrice de l'actif
+            currentTransaction.PriceAtTransaction = selectedAsset.CurrentPrice;
+
+            // Récupérer la quantité disponible dans le portefeuille
+            var portfolio = await PortfolioService
+                .GetPortfolioAsync(currentUserId);
+            availableQty = portfolio?.Lines
+                .FirstOrDefault(l => l.AssetId == currentTransaction.AssetId)
+                ?.Quantity ?? 0m;
+        }
+        else
+        {
+            // Achat : pré-remplir avec le prix actuel mais laisse modifier
+            if (currentTransaction.PriceAtTransaction == 0)
+                currentTransaction.PriceAtTransaction = selectedAsset.CurrentPrice;
+
+            availableQty = 0m;
+        }
+
+        availableBudget = await UserService
+            .GetAvailableBudgetAsync(currentUserId);
     }
 
     private async Task HandleValidSubmit()
@@ -148,54 +230,42 @@ else
 
             if (currentTransaction.Type == TransactionType.Buy)
             {
-                var available = await UserService
-                    .GetAvailableBudgetAsync(currentUserId);
                 var cost = currentTransaction.Quantity
-                    * currentTransaction.PriceAtTransaction;
+                           * currentTransaction.PriceAtTransaction;
 
-                if (cost > available)
+                if (cost > availableBudget)
                 {
                     errorMessage =
-                        $"Budget insuffisant pour cet achat ! (Disponible: {available:N2} €)";
+                        $"Budget insuffisant pour cet achat ! " +
+                        $"(Disponible : {availableBudget:N2} €)";
                     return;
                 }
 
-                success = await TransactionService
-                    .BuyAsync(currentTransaction);
+                success = await TransactionService.BuyAsync(currentTransaction);
             }
             else
             {
-                var portfolio = await PortfolioService
-                    .GetPortfolioAsync(currentUserId);
-                var availableQty = portfolio?.Lines
-                    .FirstOrDefault(l =>
-                        l.AssetId == currentTransaction.AssetId)
-                    ?.Quantity ?? 0m;
-
                 if (currentTransaction.Quantity > availableQty)
                 {
                     errorMessage =
-                        $"Quantité insuffisante pour cette vente ! (Disponible: {availableQty:N6})";
+                        $"Quantité insuffisante pour cette vente ! " +
+                        $"(Disponible : {availableQty:N6})";
                     return;
                 }
 
-                success = await TransactionService
-                    .SellAsync(currentTransaction);
+                success = await TransactionService.SellAsync(currentTransaction);
             }
 
             if (success)
                 NavigationManager.NavigateTo("/transactions");
             else
-            {
-                errorMessage = currentTransaction.Type
-                    == TransactionType.Buy
+                errorMessage = currentTransaction.Type == TransactionType.Buy
                     ? "Budget insuffisant pour cet achat !"
                     : "Quantité insuffisante pour cette vente !";
-            }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erreur serveur: {ex.Message}";
+            errorMessage = $"Erreur serveur : {ex.Message}";
         }
     }
 }

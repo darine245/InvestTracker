@@ -22,20 +22,20 @@ public static class DbSeeder
         context.Assets.AddRange(bitcoin, ethereum, apple, tesla);
         await context.SaveChangesAsync();
 
-        // 2. UTILISATEUR — mot de passe hashé via SHA-256
+        // 2. UTILISATEUR
         var user = new User
         {
-            FullName         = "Ahmed Ben Ali",
-            Username         = "ahmed",           // ← nouveau champ
-            Email            = "ahmed@investtracker.com",
-            PasswordHash     = UserService.HashPassword("ahmed123"), // ← vrai hash
+            FullName         = "Manel Derine",
+            Username         = "manel",
+            Email            = "manel@investtracker.com",
+            PasswordHash     = UserService.HashPassword("manel123"),
             InvestmentBudget = 50000.00m,
             CreatedAt        = DateTime.Now
         };
 
         context.Users.Add(user);
         await context.SaveChangesAsync();
-        Console.WriteLine($"✅ Utilisateur : {user.Username} / ahmed123");
+        Console.WriteLine($"✅ Utilisateur : {user.Username} / manel123");
 
         // 3. PORTFOLIO
         var portfolio = new Portfolio { UserId = user.Id, Name = "Mon Portefeuille Principal", CreatedAt = DateTime.Now };

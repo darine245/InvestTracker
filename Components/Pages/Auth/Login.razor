@@ -1,4 +1,5 @@
 @page "/login"
+@rendermode InteractiveServer 
 @using InvestTracker.Services
 @using InvestTracker.Services.Interfaces
 @using System.ComponentModel.DataAnnotations
@@ -39,7 +40,7 @@
                         </label>
                         <InputText @bind-Value="loginModel.Username"
                                    class="form-control"
-                                   placeholder="ahmed" />
+                                   placeholder="manel" />
                         <ValidationMessage For="() => loginModel.Username" />
 
                     </div>
@@ -74,12 +75,7 @@
 
             </div>
 
-            <div class="card-footer text-muted text-center">
-                <small>
-                    Compte test : <strong>ahmed</strong> /
-                    <strong>ahmed123</strong>
-                </small>
-            </div>
+           
 
         </div>
     </div>
