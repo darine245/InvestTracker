@@ -1,0 +1,33 @@
+# Build
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
+
+# User-specific files
+*.rsuser
+
+# Logs
+*.log
+
+# Local configuration
+appsettings.Development.json
+
+# Local database temporary files
+*.db-shm
+*.db-wal
+
+# OS generated files
+.DS_Store
+Thumbs.db
